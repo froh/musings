@@ -25,6 +25,11 @@ Deleting an item in some version means shifting it to a new trail which is almos
 
 Modifying an item is deleting the previous version and inserting a new one.
 
+# data model: meta tables and versioning info in data tables
+
+# automating the process:  triggers
+
+
 # future
 * merge
 * several sessions on the same version?
