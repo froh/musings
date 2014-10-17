@@ -21,7 +21,7 @@ The set of all trails with data points in one version is the 'trail bundle' of t
 
 An insertion of new items in some version means adding a new trail and adding these new items to that new trail:  adding them to an existing trail would add them to other versions (which the existing trail is also part of).
 
-Deleting an item in some version means shifting it to a new trail which is almost identical to the item's previous trail, with the difference that it is not part of this version.  In the same transaction, the new trail has to be added to all other versions that contained the item before deletion:  we've modified the item's trail, so we need to ensure it's still part of the other versions of that trail.
+Deleting an item in some version means shifting it to a new trail which is almost identical to the item's previous trail, with the difference that it is not part of this version.  Before a read to the older versions in the new trail, the new trail has to be added to all other versions that contained the item before deletion:  we've modified the item's trail, so we need to ensure it's still part of the other versions of that trail.
 
 Modifying an item is deleting the previous version and inserting a new one.
 
