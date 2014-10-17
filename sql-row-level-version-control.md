@@ -27,8 +27,87 @@ Modifying an item is deleting the previous version and inserting a new one.
 
 # data model: meta tables and versioning info in data tables
 
+all tables are prefixed by `ad` for ancestry dag
+
+## versions, nodes in the ancestry dag
+
+    ad-node
+    - version-id
+    - comment
+    - date
+    - work-in-progress
+
+While a node is work in progress, no successor nodes must be added to this node, to prevent the time paradoxon (how to inherit genetic changes after birth?)
+
+## edges of the ancestry dag
+
+    ad-link
+    - ancestor
+    - successor
+
+## trails
+
+all data items live on some trail in the ancestry dag (this is the foreign key of all versioned data tables, the link into the version control:
+
+    ad-trail
+    - trail-id
+
+each version is a collection of trails, each trail may pass mutliple versions:
+
+    ad-trail-bundle
+    - trail-id
+    - version-id
+
+## work in progress trails
+
+We need to log when a trail is split (update) or cut off (delete, then `new-id-after-cut` is `null`)
+
+    ad-trail-cuts
+    - original-trail-id
+    - new-id-before-cut
+    - new-id-after-cut
+
+We could either propagate such cuts to `ad-trail-bundle` within the transaction that creates them.  Or we could pull them into `ad-trail-bundle` before we look at some previous version' data.  Or we could follow a mixed strategy, polling this table until it becomes cumbersome, then do some housekeeping and püush it out to all versions and vacuum `ad-trail-cuts`.
+
+Thus this table is a housekeeping, wip-tracking aid, not static data for eternity.
+
+## what's needed in the data tables
+
+The only field that is added to the data tables is the `ad-trail-id` 
+
+    some-data-table-1
+    - ...
+    - ad-trail-id
+    - ...
+  
+And another one:
+
+    some-data-table-2
+    - ...
+    - ad-trail-id
+    - ...
+
+All queries narrow down to the trails of the requested version, like this:
+
+    SELECT *
+    FROM
+      some-data-table-1, some-data-table-2, ..., 
+      (select trail-id from ad-trail-bundle where version-id == 'REQUESTED_VERSION') AS trail-ids
+    WHERE
+      ...
+      AND
+      t1.ad-trail-id in trail-ids
+      
 # automating the process:  triggers
 
+## ON INSERT
+## ON DELETE
+## ON UPDATE
+
+## what can not be automated with triggers
+
+  - `ad-trail-cuts` housekeeping
+  - minimize the number of trails of frequently used queries
 
 # future
 * merge
