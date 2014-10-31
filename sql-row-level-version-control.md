@@ -50,22 +50,24 @@ While a node is work in progress, no successor nodes must be added to this node,
 all data items live on some trail in the ancestry dag (this is the foreign key of all versioned data tables, the link into the version control:
 
     ad-trail
-    - trail-id
+    - version-id  # the version for which it was created
+    - trail-id    # the unique id
 
-each version is a collection of trails, each trail may pass mutliple versions:
+each version is a collection of trails, each trail may pass mutliple versions.
 
-    ad-trail-bundle
-    - trail-id
-    - version-id
+    ad-trail-bundle-cache
+    - version-id  #
+    - trail-id    # 
 
-## work in progress trails
+## modifying data means modifying trails
 
-We need to log when a trail is split (update) or cut off (delete, then `new-id-after-cut` is `null`)
+We log when a trail is created (insert) or split (update) or cut off (delete).  These events are logged in a single table.
 
-    ad-trail-cuts
-    - original-trail-id
-    - new-id-before-cut
-    - new-id-after-cut
+    ad-trail-events
+    - version-id            # version at which this event occurs, i.e. this trail is modified
+    - old-id-before-event   # trail that is cut or deleted;  NULL for INSERT
+    - new-id-before-event   # NULL for INSERT.
+    - new-id-from-event     # NULL for INSERT and DELETE.
 
 We could either propagate such cuts to `ad-trail-bundle` within the transaction that creates them.  Or we could pull them into `ad-trail-bundle` before we look at some previous version' data.  Or we could follow a mixed strategy, polling this table until it becomes cumbersome, then do some housekeeping and püush it out to all versions and vacuum `ad-trail-cuts`.
 
@@ -121,6 +123,16 @@ instead:
   - `ad-trail-cuts` housekeeping
   - minimize the number of trails of frequently used queries
 
+
 # future
-* merge
-* several sessions on the same version?
+## merging
+
+Merging can create conflicts, like two data items have evolved dfferently in different branches, or got deleted in one but not the other, or they got created in both, independently, and need to be merged into one.
+
+For now, the conflict resolution is part of the future...
+
+## offline / online
+clone the DB , modify 'offline', merge when back 'online'
+
+## sessions vs versions
+several sessions on the same version?
